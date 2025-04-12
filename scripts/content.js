@@ -1,17 +1,25 @@
-chrome.runtime.onMessage.addListener(
-  (request, sender, sendResponse) => {
-    if (request.command == "stripSpaces") {
-      let inputs = document.querySelectorAll('input[type=text], textarea');
-      let count = 0;
-      inputs.forEach(input => {
-        let existingValue = input.value;
-        let newValue = input.value.trim();
-        if (existingValue !== newValue) {
-          input.value = input.value.trim();
-          count++;
-        }
-      });
-      sendResponse({count: count});
+// content-script.js
+"use strict";
+
+browser.runtime.onMessage.addListener((request) => {
+    if(request.msg === "process") {
+        return Promise.resolve(getSelectedText());
     }
-  }
-);
+});
+
+function getSelectedText() {
+    if ( // there is a focused element
+        document.hasFocus() &&
+        document.activeElement !== document.body &&
+        document.activeElement !== document.documentElement
+    ) {
+        const activeTextarea = document.activeElement;
+        const selection = activeTextarea.value.substring(
+            activeTextarea.selectionStart,
+            activeTextarea.selectionEnd,
+        );
+        document.getElementById(document.activeElement.id).value = selection.replace(/\s{2,}/g,' ').trim();
+        return true;
+    }
+    throw new Error("Something went wrong! Maybe you hadn't selected any text?");
+}
